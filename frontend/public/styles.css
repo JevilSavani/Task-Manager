@@ -1,0 +1,265 @@
+:root {
+    --accent: #2b7be4;
+    --muted: #6b7280;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Inter, system-ui, Arial;
+    background: #f1f5f9;
+    color: #0f172a;
+    margin: 0;
+    padding: 28px;
+}
+
+.site-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1100px;
+    margin: 0 auto 18px;
+    gap: 16px;
+}
+
+.brand {
+    font-weight: 800;
+    color: var(--accent);
+    font-size: 20px;
+}
+
+.site-header input {
+    width: 320px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #e6edf3;
+}
+
+.container {
+    display: flex;
+    gap: 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 22px;
+    box-shadow: 0 4px 12px rgba(2, 6, 23, 0.06);
+}
+
+.left {
+    flex: 0 0 360px;
+}
+
+.right {
+    flex: 1;
+}
+
+h2 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+}
+
+label {
+    display: block;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 6px;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid #e6edf3;
+    border-radius: 8px;
+    background: #fbfdff;
+}
+
+button {
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.create-meta {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.task-card {
+    border: 1px solid #eef2f6;
+    padding: 16px;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.task-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.task-id {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.task-title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.badge {
+    display: inline-block;
+    padding: 6px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.badge.completed {
+    background: var(--success);
+}
+
+.badge.pending {
+    background: var(--warning);
+}
+
+.meta {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 8px;
+}
+
+.task-actions {
+    margin-top: 12px;
+}
+
+.task-actions button {
+    margin-right: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #e6edf3;
+    background: #fff;
+    cursor: pointer;
+}
+
+.btn-edit {
+    color: #0f172a;
+}
+
+.btn-toggle {
+    color: #0f172a;
+}
+
+.btn-delete {
+    border-color: rgba(239, 68, 68, 0.12);
+    color: var(--danger);
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 6, 23, 0.45);
+    z-index: 40;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-panel {
+    background: #fff;
+    padding: 18px;
+    border-radius: 10px;
+    width: 420px;
+    box-shadow: 0 10px 30px rgba(2, 6, 23, 0.2);
+}
+
+.modal-panel h3 {
+    margin: 0 0 10px;
+}
+
+.modal-panel input,
+.modal-panel textarea,
+.modal-panel select {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #e6edf3;
+    border-radius: 8px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.btn-muted {
+    background: #fff;
+    border: 1px solid #e6edf3;
+    color: #0f172a;
+}
+
+.left-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.filters {
+    display: flex;
+    gap: 8px;
+}
+
+.filter {
+    background: #fff;
+    border: 1px solid #e6edf3;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.filter.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: transparent;
+}
+
+@media (max-width: 800px) {
+    .container {
+        flex-direction: column;
+        padding: 16px;
+    }
+
+    .left {
+        flex: unset;
+    }
+}
