@@ -143,19 +143,36 @@ async function createTask(event) {
   }
 
   async function toggleStatus(task) {
-    try {
-      setError('')
-      const updatedTask = await request(`/api/tasks/${task.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({ completed: !task.completed }),
-      })
-      setTasks((current) =>
-        current.map((item) => (item.id === task.id ? updatedTask : item)),
-      )
-    } catch (err) {
-      setError(err.message)
-    }
+  // If already completed, do nothing
+  if (task.completed) {
+    return
   }
+
+  const confirmed = window.confirm(
+    'Are you sure you want to mark this task as completed? This cannot be undone.'
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    setError('')
+
+    const updatedTask = await request(`/api/tasks/${task.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ completed: true }),
+    })
+
+    setTasks((current) =>
+      current.map((item) =>
+        item.id === task.id ? updatedTask : item
+      )
+    )
+  } catch (err) {
+    setError(err.message)
+  }
+}
 
 async function deleteTask(taskId) {
   const confirmed = window.confirm(
