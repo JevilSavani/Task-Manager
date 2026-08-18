@@ -76,29 +76,39 @@ function App() {
     setEditingForm((current) => ({ ...current, [name]: value }))
   }
 
-  async function createTask(event) {
-    event.preventDefault()
+async function createTask(event) {
+  event.preventDefault()
 
-    if (!form.title.trim()) {
-      setError('Task title is required')
-      return
-    }
-
-    try {
-      setError('')
-      setIsSaving(true)
-      const task = await request('/api/tasks', {
-        method: 'POST',
-        body: JSON.stringify(form),
-      })
-      setTasks((current) => [task, ...current])
-      setForm(emptyForm)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setIsSaving(false)
-    }
+  if (!form.title.trim()) {
+    setError('Task title is required')
+    return
   }
+
+  const confirmed = window.confirm(
+    `Are you sure you want to create the task "${form.title}"?`
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  try {
+    setError('')
+    setIsSaving(true)
+
+    const task = await request('/api/tasks', {
+      method: 'POST',
+      body: JSON.stringify(form),
+    })
+
+    setTasks((current) => [task, ...current])
+    setForm(emptyForm)
+  } catch (err) {
+    setError(err.message)
+  } finally {
+    setIsSaving(false)
+  }
+}
 
   function startEdit(task) {
     setEditingId(task.id)
@@ -147,15 +157,28 @@ function App() {
     }
   }
 
-  async function deleteTask(taskId) {
-    try {
-      setError('')
-      await request(`/api/tasks/${taskId}`, { method: 'DELETE' })
-      setTasks((current) => current.filter((task) => task.id !== taskId))
-    } catch (err) {
-      setError(err.message)
-    }
+async function deleteTask(taskId) {
+  const confirmed = window.confirm(
+    'Are you sure you want to delete this task?'
+  )
+
+  if (!confirmed) {
+    return
   }
+
+  try {
+    setError('')
+    await request(`/api/tasks/${taskId}`, {
+      method: 'DELETE',
+    })
+
+    setTasks((current) =>
+      current.filter((task) => task.id !== taskId)
+    )
+  } catch (err) {
+    setError(err.message)
+  }
+}
 
   return (
     <main className="app-shell">
