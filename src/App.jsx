@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import './App.css'
+
+const ProjectsPage = lazy(() => import('./pages/ProjectsPage.jsx'))
+const ContactPage = lazy(() => import('./pages/ContactPage.jsx'))
 
 const emptyForm = {
   title: '',
@@ -7,6 +10,72 @@ const emptyForm = {
 }
 
 function App() {
+  const [path, setPath] = useState(window.location.pathname)
+
+  useEffect(() => {
+    function handleNavigation() {
+      setPath(window.location.pathname)
+    }
+
+    window.addEventListener('popstate', handleNavigation)
+    return () => window.removeEventListener('popstate', handleNavigation)
+  }, [])
+
+  function navigateTo(event, destination) {
+    event.preventDefault()
+    window.history.pushState({}, '', destination)
+    setPath(destination)
+  }
+
+  const page =
+    path === '/projects' ? (
+      <ProjectsPage />
+    ) : path === '/contact' ? (
+      <ContactPage />
+    ) : (
+      <TaskManagerPage />
+    )
+
+  return (
+    <>
+      <nav className="site-nav" aria-label="Main navigation">
+        <a
+          className={path === '/' ? 'active' : ''}
+          href="/"
+          onClick={(event) => navigateTo(event, '/')}
+        >
+          Tasks
+        </a>
+        <a
+          className={path === '/projects' ? 'active' : ''}
+          href="/projects"
+          onClick={(event) => navigateTo(event, '/projects')}
+        >
+          Projects
+        </a>
+        <a
+          className={path === '/contact' ? 'active' : ''}
+          href="/contact"
+          onClick={(event) => navigateTo(event, '/contact')}
+        >
+          Contact
+        </a>
+      </nav>
+      <Suspense fallback={<RouteLoadingFallback />}>{page}</Suspense>
+    </>
+  )
+}
+
+function RouteLoadingFallback() {
+  return (
+    <main className="route-loading" aria-live="polite" aria-busy="true">
+      <div className="loading-spinner" aria-hidden="true" />
+      <p>Loading page...</p>
+    </main>
+  )
+}
+
+function TaskManagerPage() {
   const [tasks, setTasks] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
