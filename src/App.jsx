@@ -8,6 +8,7 @@ const CacheDashboardPage = lazy(() => import('./pages/CacheDashboardPage.jsx'))
 const emptyForm = {
   title: '',
   description: '',
+  assignedUser: '',
 }
 
 function App() {
@@ -194,6 +195,7 @@ async function createTask(event) {
     setEditingForm({
       title: task.title,
       description: task.description,
+      assignedUser: task.assignedUser || '',
     })
   }
 
@@ -301,6 +303,16 @@ async function deleteTask(taskId) {
             rows="6"
           />
 
+          <label htmlFor="assignedUser">Assigned User</label>
+          <input
+            id="assignedUser"
+            name="assignedUser"
+            type="text"
+            placeholder="User name..."
+            value={form.assignedUser}
+            onChange={updateForm}
+          />
+
           <button className="primary-button" type="submit" disabled={isSaving}>
             {isSaving ? 'Creating...' : '+ Create Task'}
           </button>
@@ -346,6 +358,12 @@ async function deleteTask(taskId) {
                       onChange={updateEditingForm}
                       rows="4"
                     />
+                    <input
+                      aria-label="Edit assigned user"
+                      name="assignedUser"
+                      value={editingForm.assignedUser}
+                      onChange={updateEditingForm}
+                    />
                   </div>
                 ) : (
                   <>
@@ -358,6 +376,7 @@ async function deleteTask(taskId) {
                       {task.completed ? 'Completed' : 'Pending'}
                     </span>
                     <p>{task.description || 'No description provided.'}</p>
+                    <p>Assigned to: {task.assignedUser || 'Unassigned'}</p>
                   </>
                 )}
 

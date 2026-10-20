@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import express from 'express'
 import { MongoClient, ObjectId } from 'mongodb'
+import { taskEvents } from './notifications.js'
 import {
   ALL_TASKS_CACHE_KEY,
   cacheStats,
@@ -28,6 +29,7 @@ function formatTask(task) {
     id: task._id.toString(),
     title: task.title,
     description: task.description || '',
+    assignedUser: task.assignedUser || 'Unassigned',
     completed: Boolean(task.completed),
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
@@ -158,7 +160,7 @@ app.get(['/api/cache/stats', '/api/tasks/cache/stats'], (req, res) => {
 
 app.post('/api/tasks', async (req, res, next) => {
   try {
-    const { title, description = '' } = req.body
+    const { title, description = '', assignedUser = '' } = req.body
 
     if (!title || !title.trim()) {
       return res.status(400).json({ error: 'Task title is required' })
@@ -169,6 +171,10 @@ app.post('/api/tasks', async (req, res, next) => {
       title: title.trim(),
       description:
         typeof description === 'string' ? description.trim() : '',
+      assignedUser:
+        typeof assignedUser === 'string' && assignedUser.trim()
+          ? assignedUser.trim()
+          : 'Unassigned',
       completed: false,
       createdAt: now,
       updatedAt: now,
@@ -177,7 +183,17 @@ app.post('/api/tasks', async (req, res, next) => {
     const result = await tasksCollection.insertOne(task)
     invalidateTaskCaches(result.insertedId.toString())
 
-    res.status(201).json(formatTask({ _id: result.insertedId, ...task }))
+    const responseTask = formatTask({ _id: result.insertedId, ...task })
+    res.status(201).json(responseTask)
+    console.log(`[api] task response sent at ${new Date().toISOString()}`)
+
+    setImmediate(() => {
+      taskEvents.emit('task-created', {
+        title: task.title,
+        createdAt: task.createdAt,
+        assignedUser: task.assignedUser,
+      })
+    })
   } catch (err) {
     next(err)
   }
@@ -201,6 +217,10 @@ app.put('/api/tasks/:id', async (req, res, next) => {
 
     if (typeof req.body.description === 'string') {
       updates.description = req.body.description.trim()
+    }
+
+    if (typeof req.body.assignedUser === 'string') {
+      updates.assignedUser = req.body.assignedUser.trim() || 'Unassigned'
     }
 
     if (typeof req.body.completed === 'boolean') {
