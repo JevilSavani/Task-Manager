@@ -3,6 +3,7 @@ import './App.css'
 
 const ProjectsPage = lazy(() => import('./pages/ProjectsPage.jsx'))
 const ContactPage = lazy(() => import('./pages/ContactPage.jsx'))
+const CacheDashboardPage = lazy(() => import('./pages/CacheDashboardPage.jsx'))
 
 const emptyForm = {
   title: '',
@@ -32,6 +33,8 @@ function App() {
       <ProjectsPage />
     ) : path === '/contact' ? (
       <ContactPage />
+    ) : path === '/cache-dashboard' ? (
+      <CacheDashboardPage />
     ) : (
       <TaskManagerPage />
     )
@@ -59,6 +62,13 @@ function App() {
           onClick={(event) => navigateTo(event, '/contact')}
         >
           Contact
+        </a>
+        <a
+          className={path === '/cache-dashboard' ? 'active' : ''}
+          href="/cache-dashboard"
+          onClick={(event) => navigateTo(event, '/cache-dashboard')}
+        >
+          Cache Dashboard
         </a>
       </nav>
       <Suspense fallback={<RouteLoadingFallback />}>{page}</Suspense>

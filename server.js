@@ -1,6 +1,13 @@
 import 'dotenv/config'
 import express from 'express'
 import { MongoClient, ObjectId } from 'mongodb'
+import {
+  ALL_TASKS_CACHE_KEY,
+  cacheStats,
+  getTaskCacheKey,
+  invalidateTaskCaches,
+  taskCache,
+} from './cache.js'
 
 const app = express()
 const PORT = process.env.PORT || 5000
@@ -31,6 +38,15 @@ function getTaskObjectId(id) {
   return ObjectId.isValid(id) ? new ObjectId(id) : null
 }
 
+function setCacheHeaders(res, cacheState, cacheKey, startedAt) {
+  const elapsedMs = Number(process.hrtime.bigint() - startedAt) / 1_000_000
+  res.set({
+    'X-Cache': cacheState,
+    'X-Cache-Key': cacheKey,
+    'X-Response-Time': `${elapsedMs.toFixed(2)}ms`,
+  })
+}
+
 async function connectToDatabase() {
   await client.connect()
 
@@ -50,12 +66,30 @@ app.use((req, res, next) => {
 
 app.get('/api/tasks', async (req, res, next) => {
   try {
+    const startedAt = process.hrtime.bigint()
+    const bypassCache = req.query.bypassCache === 'true'
+    const cacheKey = ALL_TASKS_CACHE_KEY
+    const cachedTasks = bypassCache ? undefined : taskCache.get(cacheKey)
+
+    if (cachedTasks !== undefined) {
+      cacheStats.hits += 1
+      setCacheHeaders(res, 'HIT', cacheKey, startedAt)
+      return res.status(200).json(cachedTasks)
+    }
+
+    cacheStats.misses += 1
     const tasks = await tasksCollection
       .find()
       .sort({ createdAt: -1 })
       .toArray()
 
-    res.status(200).json(tasks.map(formatTask))
+    const formattedTasks = tasks.map(formatTask)
+    if (!bypassCache) {
+      taskCache.set(cacheKey, formattedTasks)
+    }
+
+    setCacheHeaders(res, bypassCache ? 'BYPASS' : 'MISS', cacheKey, startedAt)
+    res.status(200).json(formattedTasks)
   } catch (err) {
     next(err)
   }
@@ -63,22 +97,63 @@ app.get('/api/tasks', async (req, res, next) => {
 
 app.get('/api/tasks/:id', async (req, res, next) => {
   try {
+    const startedAt = process.hrtime.bigint()
     const _id = getTaskObjectId(req.params.id)
 
     if (!_id) {
       return res.status(404).json({ error: 'Task not found' })
     }
 
+    const taskCacheKey = getTaskCacheKey(req.params.id)
+    const bypassCache = req.query.bypassCache === 'true'
+    const cachedTask = bypassCache ? undefined : taskCache.get(taskCacheKey)
+
+    if (cachedTask !== undefined) {
+      cacheStats.hits += 1
+      setCacheHeaders(res, 'HIT', taskCacheKey, startedAt)
+      return res.status(200).json(cachedTask)
+    }
+
+    cacheStats.misses += 1
     const task = await tasksCollection.findOne({ _id })
 
     if (!task) {
       return res.status(404).json({ error: 'Task not found' })
     }
 
-    res.status(200).json(formatTask(task))
+    const formattedTask = formatTask(task)
+    if (!bypassCache) {
+      taskCache.set(taskCacheKey, formattedTask)
+    }
+
+    setCacheHeaders(res, bypassCache ? 'BYPASS' : 'MISS', taskCacheKey, startedAt)
+    res.status(200).json(formattedTask)
   } catch (err) {
     next(err)
   }
+})
+
+function getCacheStats() {
+  return {
+    success: true,
+    message: 'node-cache in-memory caching statistics',
+    hits: cacheStats.hits,
+    misses: cacheStats.misses,
+    totalRequests: cacheStats.hits + cacheStats.misses,
+    hitRate:
+      cacheStats.hits + cacheStats.misses > 0
+        ? `${((cacheStats.hits / (cacheStats.hits + cacheStats.misses)) * 100).toFixed(1)}%`
+        : '0.0%',
+    invalidations: cacheStats.invalidations,
+    keys: taskCache.keys().length,
+    ttlSeconds: taskCache.options.stdTTL,
+    activeKeysCount: taskCache.keys().length,
+    activeKeys: taskCache.keys(),
+  }
+}
+
+app.get(['/api/cache/stats', '/api/tasks/cache/stats'], (req, res) => {
+  res.status(200).json(getCacheStats())
 })
 
 app.post('/api/tasks', async (req, res, next) => {
@@ -100,6 +175,7 @@ app.post('/api/tasks', async (req, res, next) => {
     }
 
     const result = await tasksCollection.insertOne(task)
+    invalidateTaskCaches(result.insertedId.toString())
 
     res.status(201).json(formatTask({ _id: result.insertedId, ...task }))
   } catch (err) {
@@ -141,6 +217,7 @@ app.put('/api/tasks/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'Task not found' })
     }
 
+    invalidateTaskCaches(req.params.id)
     res.status(200).json(formatTask(result))
   } catch (err) {
     next(err)
@@ -161,6 +238,7 @@ app.delete('/api/tasks/:id', async (req, res, next) => {
       return res.status(404).json({ error: 'Task not found' })
     }
 
+    invalidateTaskCaches(req.params.id)
     res.status(200).json({ message: 'Task deleted successfully' })
   } catch (err) {
     next(err)
