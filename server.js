@@ -15,6 +15,9 @@ const PORT = process.env.PORT || 5000
 const MONGODB_URI = process.env.MONGODB_URI
 const DB_NAME = process.env.MONGODB_DB_NAME || 'taskmanager'
 const TASKS_COLLECTION = 'tasks'
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini'
+const AI_REQUEST_TIMEOUT_MS = 15_000
 
 if (!MONGODB_URI) {
   console.error('Missing MONGODB_URI. Add it to a .env file before starting.')
@@ -156,6 +159,83 @@ function getCacheStats() {
 
 app.get(['/api/cache/stats', '/api/tasks/cache/stats'], (req, res) => {
   res.status(200).json(getCacheStats())
+})
+
+app.post('/api/ai/task-description', async (req, res) => {
+  const title = typeof req.body.title === 'string' ? req.body.title.trim() : ''
+
+  if (!title) {
+    return res.status(400).json({ error: 'Task title is required to generate a description' })
+  }
+
+  if (!OPENAI_API_KEY) {
+    console.error('AI description request rejected: OPENAI_API_KEY is not configured')
+    return res.status(503).json({
+      error: 'AI suggestions are not configured. You can still create tasks normally.',
+    })
+  }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), AI_REQUEST_TIMEOUT_MS)
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + OPENAI_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: 0.4,
+        max_tokens: 180,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Write a concise, practical task description in 1-3 sentences. Do not invent specific facts, names, or deadlines. Return only the description text.',
+          },
+          {
+            role: 'user',
+            content: `Create a useful description for this task title: ${title}`,
+          },
+        ],
+      }),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      console.error(`OpenAI description request failed with status ${response.status}`)
+      return res.status(502).json({
+        error: 'The AI suggestion service is unavailable. You can still enter a description manually.',
+      })
+    }
+
+    const payload = await response.json()
+    const description = payload.choices?.[0]?.message?.content?.trim()
+
+    if (!description) {
+      console.error('OpenAI description response did not contain usable text')
+      return res.status(502).json({
+        error: 'The AI returned an empty suggestion. You can still enter a description manually.',
+      })
+    }
+
+    return res.status(200).json({ description })
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return res.status(504).json({
+        error: 'The AI suggestion timed out. You can still enter a description manually.',
+      })
+    }
+
+    console.error('OpenAI description request failed:', err)
+    return res.status(502).json({
+      error: 'Could not generate an AI suggestion. You can still enter a description manually.',
+    })
+  } finally {
+    clearTimeout(timeout)
+  }
 })
 
 app.post('/api/tasks', async (req, res, next) => {

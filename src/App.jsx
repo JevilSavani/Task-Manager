@@ -93,6 +93,10 @@ function TaskManagerPage() {
   const [editingForm, setEditingForm] = useState(emptyForm)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+  const [hasAiSuggestion, setHasAiSuggestion] = useState(false)
+  const [descriptionBeforeSuggestion, setDescriptionBeforeSuggestion] = useState('')
+  const [aiError, setAiError] = useState('')
   const [error, setError] = useState('')
 
   const completedCount = useMemo(
@@ -151,6 +155,39 @@ function TaskManagerPage() {
     setForm((current) => ({ ...current, [name]: value }))
   }
 
+  async function generateDescription() {
+    if (!form.title.trim()) {
+      setAiError('Add a task title before generating a description.')
+      return
+    }
+
+    try {
+      setAiError('')
+      setIsGeneratingDescription(true)
+      const result = await request('/api/ai/task-description', {
+        method: 'POST',
+        body: JSON.stringify({ title: form.title }),
+      })
+
+      setDescriptionBeforeSuggestion(form.description)
+      setForm((current) => ({ ...current, description: result.description }))
+      setHasAiSuggestion(true)
+    } catch (err) {
+      setAiError(err.message)
+    } finally {
+      setIsGeneratingDescription(false)
+    }
+  }
+
+  function discardSuggestion() {
+    setForm((current) => ({
+      ...current,
+      description: descriptionBeforeSuggestion,
+    }))
+    setHasAiSuggestion(false)
+    setAiError('')
+  }
+
   function updateEditingForm(event) {
     const { name, value } = event.target
     setEditingForm((current) => ({ ...current, [name]: value }))
@@ -183,6 +220,8 @@ async function createTask(event) {
 
     setTasks((current) => [task, ...current])
     setForm(emptyForm)
+    setHasAiSuggestion(false)
+    setDescriptionBeforeSuggestion('')
   } catch (err) {
     setError(err.message)
   } finally {
@@ -294,6 +333,30 @@ async function deleteTask(taskId) {
           />
 
           <label htmlFor="description">Description</label>
+          <div className="description-tools">
+            <button
+              className="ai-button"
+              type="button"
+              onClick={generateDescription}
+              disabled={isGeneratingDescription}
+            >
+              {isGeneratingDescription ? 'Generating...' : '✨ Generate with AI'}
+            </button>
+            {hasAiSuggestion ? (
+              <button
+                className="discard-button"
+                type="button"
+                onClick={discardSuggestion}
+              >
+                Discard suggestion
+              </button>
+            ) : null}
+          </div>
+          {hasAiSuggestion ? (
+            <div className="ai-disclaimer" role="status">
+              AI-generated suggestion. Please review before saving.
+            </div>
+          ) : null}
           <textarea
             id="description"
             name="description"
@@ -302,6 +365,7 @@ async function deleteTask(taskId) {
             onChange={updateForm}
             rows="6"
           />
+          {aiError ? <p className="ai-error">{aiError}</p> : null}
 
           <label htmlFor="assignedUser">Assigned User</label>
           <input

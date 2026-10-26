@@ -377,6 +377,56 @@ label {
   font-weight: 700;
 }
 
+.description-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: -4px;
+}
+
+.ai-button,
+.discard-button {
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 11px;
+}
+
+.ai-button {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.ai-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.discard-button {
+  color: #475569;
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.ai-disclaimer {
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  color: #92400e;
+  background: #fffbeb;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  padding: 9px 11px;
+}
+
+.ai-error {
+  color: #b45309;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 input,
 textarea {
   width: 100%;

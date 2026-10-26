@@ -37,3 +37,12 @@ API endpoints:
 
 Open http://localhost:5000 in your browser to use the simple frontend.
 >>>>>>> 5f91b96a8ea14e07cd95dfebcf774faef04e027e
+
+## AI task descriptions
+
+The create-task form can generate a concise description from a task title using
+the OpenAI API. Configure `OPENAI_API_KEY` in the backend `.env` file (never in
+frontend code). `OPENAI_MODEL` is optional and defaults to `gpt-4o-mini`.
+
+If the AI service is unavailable or times out, the form displays an error and
+tasks can still be created with a manually entered description.
