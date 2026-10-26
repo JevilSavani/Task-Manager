@@ -9,7 +9,7 @@ import {
 } from '../cache.js'
 
 test('builds task-specific cache keys', () => {
-  assert.equal(getTaskCacheKey('task-123'), 'tasks:deliberately-broken-key')
+  assert.equal(getTaskCacheKey('task-123'), 'tasks:task-123')
 })
 
 test('invalidates the task list and task-specific cache entries', () => {
