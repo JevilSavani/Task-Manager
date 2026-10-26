@@ -8,7 +8,7 @@ import {
   taskCache,
 } from '../cache.js'
 
-test('builds task-specific cache keys', () => {
+test('builds a task-specific cache key', () => {
   assert.equal(getTaskCacheKey('task-123'), 'tasks:task-123')
 })
 
